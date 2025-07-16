@@ -1,6 +1,7 @@
 import chess
 import chess.svg
-from IPython.display import display, SVG
+import webbrowser
+import os
 
 
 class ChessworthBoard(chess.Board):
@@ -19,7 +20,6 @@ class ChessworthBoard(chess.Board):
     }
 
     def push_custom(self, move):
-        """Custom push function that applies mutual destruction if needed, otherwise pushes normally."""
         if move not in self.legal_moves:
             raise ValueError("Illegal move.")
 
@@ -47,7 +47,6 @@ class ChessworthBoard(chess.Board):
             captured_value = self.PIECE_VALUES[captured_piece.piece_type]
 
             if capturing_value < captured_value:
-                # Apply mutual destruction rule
                 self.remove_piece_at(move.from_square)
                 self.remove_piece_at(captured_square)
                 self.turn = not self.turn
@@ -57,19 +56,21 @@ class ChessworthBoard(chess.Board):
                     self.fullmove_number += 1
                 return "mutual"
 
-        # FIX: Reject only if current player is still in check after move
         test_board = self.copy(stack=True)
         chess.Board.push(test_board, move)
         if test_board.is_check() and test_board.turn == self.turn:
             raise ValueError("Move leaves your king in check!")
 
-        # Safe to push
         super().push(move)
         return "normal"
 
     def show(self):
-        """Displays the board using SVG in Jupyter environments."""
-        display(SVG(chess.svg.board(self, size=350)))
+        """Save SVG and open in browser."""
+        svg_code = chess.svg.board(self, size=500)
+        with open("board.svg", "w", encoding="utf-8") as f:
+            f.write(svg_code)
+        print("Opening board.svg in browser...")
+        webbrowser.open('file://' + os.path.realpath("board.svg"))
 
 
 def play_game():
@@ -85,16 +86,15 @@ def play_game():
             legal_move_sans = []
         print(f"Legal moves: {legal_move_sans}")
 
-        move_input = input(f"{'White' if board.turn else 'Black'} to move ('q', 'e' or 'a' to quit): ").strip()
+        move_input = input(f"{'White' if board.turn else 'Black'} to move ('q' to quit): ").strip()
 
-        # Add quit option
-        if move_input.lower() in ["quit", "exit", "abort", "q", "e", "a"]:
+        if move_input.lower() in ["quit", "exit", "abort", "q"]:
             confirm = input("Are you sure you want to quit the game? (y/n): ").strip().lower()
             if confirm == 'y':
                 print("Game aborted.")
                 return
             else:
-                continue  # Let user try again
+                continue
 
         try:
             move = board.parse_san(move_input)
@@ -111,3 +111,8 @@ def play_game():
 
     print("Game over!")
     print("Result:", board.result())
+
+
+# Run the game
+if __name__ == "__main__":
+    play_game()
