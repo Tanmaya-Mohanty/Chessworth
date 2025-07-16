@@ -111,6 +111,3 @@ def play_game():
 
     print("Game over!")
     print("Result:", board.result())
-
-if __name__ == "__main__":
-    play_game()
